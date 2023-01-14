@@ -1,0 +1,33 @@
+# dependencies
+packages:
+  - openjdk-16-jdk
+  - nodejs
+  - nginx
+
+# app version
+backend_app_version: "1.0.304439"
+frontend_app_version: "1.0.303977"
+
+# app data
+app:
+  backend:
+    dest: /opt/sausage-backend/
+    source:
+      "https://nexus.praktikum-services.ru/repository/\
+      sausage-store-erakhmetzyanov-backend/com/yandex/practicum/devops/\
+      sausage-store/{{ backend_app_version }}/sausage-store-{{ backend_app_version }}.jar"
+    user: jarservice
+    group: jarservice
+  frontend:
+    dest: /var/www-data/
+    source:
+      "https://nexus.praktikum-services.ru/repository/\
+      sausage-store-erakhmetzyanov-frontend/sausage-store/\
+      {{ frontend_app_version }}/sausage-store-{{ frontend_app_version }}.tar.gz"
+    user: www-data
+    group: www-data
+
+# reposiotory-data
+nexus_auth:
+  username: "{{ vault_nexus_username }}"
+  password: "{{ vault_nexus_password }}"

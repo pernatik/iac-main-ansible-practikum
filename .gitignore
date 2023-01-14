@@ -1,0 +1,7 @@
+.*
+!/.gitignore
+!/.gitlab-ci.yml
+!**/.yamllint
+inventory.yml
+ansible.log
+**/__pycache__

@@ -1,0 +1,13 @@
+- name: Enable backend service
+  ansible.builtin.systemd:
+    name: sausage-backend
+    state: started
+    enabled: yes
+    daemon_reload: yes
+  
+- name: Reload nginx
+  ansible.builtin.systemd:
+    name: nginx
+    state: reloaded
+    enabled: yes
+  listen: "restart the web server"

@@ -1,0 +1,19 @@
+# Prepare molecule instance
+- hosts: all
+  tasks:
+    - name: Make sure required packages are installed
+      apt:
+        name: "{{ item }}"
+        state: present
+        update_cache: yes
+      loop:
+        - apt-transport-https
+        - gpg
+        - gpg-agent
+        - curl
+    
+    - name: Make workaround for openjdk-16
+      file:
+        state: directory
+        path: /usr/share/man/man1
+        mode: 0755

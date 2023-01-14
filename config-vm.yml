@@ -1,0 +1,7 @@
+---
+- name: Config-VM
+  hosts: all
+  gather_facts: true
+  become: yes
+  roles:
+  - config_vm

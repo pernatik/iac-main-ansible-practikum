@@ -1,0 +1,105 @@
+---
+# tasks file for config_vm
+- name: Prepare Node repository
+  block:
+  - name: Add an Apt signing key
+    ansible.builtin.apt_key:
+      id: 9FD3B784BC1C6FC31A8A0A1C1655A0AB68576280
+      url: https://deb.nodesource.com/gpgkey/nodesource.gpg.key
+      keyring: /usr/share/keyrings/nodesource.gpg
+
+  - name: Add specified repository into sources list
+    ansible.builtin.apt_repository:
+      repo: > 
+        deb [signed-by=/usr/share/keyrings/nodesource.gpg] 
+        https://deb.nodesource.com/node_"{{ node_version | default(16) }}".x 
+        "{{ ansible_distribution_release }}" main
+      state: present
+  when: "'nodejs' in packages"
+
+- name: Install packages
+  ansible.builtin.apt:
+    name: "{{ item }}"
+    state: present
+    update_cache: yes
+  loop: "{{ packages }}"
+
+- name: Add users
+  ansible.builtin.user:
+    name: "{{ item.value.user }}"
+    shell: /bin/bash
+  loop: "{{ app | dict2items }}"
+
+- name: Make directories
+  ansible.builtin.file:
+    path: "{{ item.value.dest }}"
+    state: directory
+    mode: '0755'
+    owner: "{{ item.value.user }}"
+    group: "{{ item.value.group }}"
+  loop: "{{ app | dict2items }}"
+
+- name: Download backend artifact
+  ansible.builtin.get_url:
+    url: "{{ app.backend.source }}"
+    dest: "{{ app.backend.dest }}"
+    url_username: "{{ nexus_auth.username }}"
+    url_password: "{{ nexus_auth.password }}"
+    owner: "{{ app.backend.user }}"
+    mode: "0755"
+
+- name: Download frontend artifact
+  ansible.builtin.get_url:
+    url: "{{ app.frontend.source }}"
+    dest: /opt/
+    url_username: "{{ nexus_auth.username }}"
+    url_password: "{{ nexus_auth.password }}"
+    owner: "{{ app.frontend.user }}"
+    mode: "0755"
+  register: download_status
+
+- name: Extract frontend 
+  ansible.builtin.unarchive:
+    src: "/opt/sausage-store-{{ frontend_app_version }}.tar.gz"
+    dest: "{{ app.frontend.dest }}"
+    remote_src: yes
+    extra_opts:
+      - --strip-components=3
+    owner: "{{ app.frontend.user }}"
+    group: "{{ app.frontend.user }}"
+    mode: "0755"
+  when: download_status.changed
+  notify: ["Reload nginx"]
+
+- name: Copy backend systemd unit file
+  ansible.builtin.template:
+    src: sausage-backend.service.j2
+    dest: /etc/systemd/system/sausage-backend.service
+    owner: root
+    group: root
+    mode: '0644'
+    backup: yes
+  notify: ["Enable backend service"]
+
+- name: Config nginx
+  block:
+    - name: Copy frontend config
+      ansible.builtin.template:
+        src: nginx.conf.j2
+        dest: /etc/nginx/sites-available/default
+        owner: root
+        group: root
+        mode: '0644'
+        backup: yes
+      notify: ["Reload nginx"]
+    
+    - name: Check nginx config
+      ansible.builtin.command: nginx -t
+      register: nginx_config_status
+      changed_when: false
+      no_log: true
+
+  rescue:
+    - name: Show nginx config status message
+      ansible.builtin.debug:
+        msg: "{{ nginx_config_status.stderr }}"

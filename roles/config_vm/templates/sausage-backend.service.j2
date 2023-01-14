@@ -1,0 +1,16 @@
+[Unit]
+Description=Sausage-store
+
+[Service]
+User={{ app.backend.user }}
+Restart=always
+ExecStart=/usr/bin/java \
+    -Dmyserver.basePath='{{ app.backend.dest }}' \
+    -Dmyserver.bindAddr='0.0.0.0' \
+    -Dmyserver.bindPort='8080' \
+    -Dmyserver.hostName='Sausage-store' \
+    -jar '{{ app.backend.dest }}sausage-store-{{ backend_app_version }}.jar'
+SuccessExitStatus=143
+
+[Install]
+WantedBy=multi-user.target

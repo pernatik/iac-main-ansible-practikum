@@ -1,0 +1,6 @@
+---
+# defaults file for config_vm
+packages:
+  - openjdk-16-jdk
+  - nodejs
+node_version: 16

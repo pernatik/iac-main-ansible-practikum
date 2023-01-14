@@ -1,0 +1,35 @@
+variables:
+  DOCKER_HOST: tcp://docker:2376
+  DOCKER_TLS_CERTDIR: "/certs"
+  DOCKER_TLS_VERIFY: 1
+  DOCKER_CERT_PATH: "$DOCKER_TLS_CERTDIR/client"
+  PY_COLORS: 1
+  ANSIBLE_FORCE_COLOR: 'True'
+
+stages:
+  - test
+
+services:
+  - docker:dind
+
+# molecule-test-wo-dependencies:
+#   stage: test
+#   image: docker:stable-dind
+#   before_script:
+#     - apk add --no-cache
+#       python3 python3-dev py3-pip gcc git curl build-base
+#       autoconf automake py3-cryptography linux-headers
+#       musl-dev libffi-dev openssl-dev openssh
+#     - python3 -m pip install ansible molecule[docker] 
+#       ansible-lint yamllint pytest-testinfra
+#     - echo $ANSIBLE_VAULT_PASSWORD > roles/config_vm/.env
+#   script:
+#     - cd roles/config_vm && molecule test
+
+molecule-test:
+  stage: test
+  image: cr.yandex/crp4v5843a482vqmajv8/yp-devops-molecule:v0.1.0
+  before_script:
+    - echo $ANSIBLE_VAULT_PASSWORD > roles/config_vm/.env
+  script:
+    - cd roles/config_vm && molecule test

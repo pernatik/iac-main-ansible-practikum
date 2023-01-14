@@ -1,0 +1,52 @@
+---
+dependency:
+  name: galaxy
+
+driver:
+  name: docker
+
+platforms:
+  - name: instance-systemd
+    image: geerlingguy/docker-ubuntu2004-ansible
+    # image: "geerlingguy/docker-debian11-ansible:latest"
+    tmpfs:
+      - /run
+      - /tmp
+    volumes:
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    capabilities:
+      - SYS_ADMIN
+    command: "/lib/systemd/systemd"
+    pre_build_image: true
+
+test_sequence:
+  - lint
+  - destroy
+  - dependency
+  - syntax
+  - create
+  - converge
+  - idempotence
+  - verify
+  - destroy
+
+provisioner:
+  name: ansible
+  # Add group_vars with protected values
+  inventory:
+    links:
+      group_vars: ../../../../group_vars
+  # Include playbook for preparing molecule instance
+  playbooks:
+    prepare: prepare.yml
+
+lint: |
+  yamllint .
+  ansible-lint .
+
+verifier:
+  name: testinfra
+  options:
+    color: "yes"
+    verbose: True
+    # s: true
